@@ -87,6 +87,12 @@ export class VideoSwitches {
 export class Video {
   readonly framebuffer = new Uint32Array(SCREEN_WIDTH * SCREEN_HEIGHT);
   monitor: Monitor = 'color';
+  /**
+   * Blends each dot of a 640-dot Super Hi-Res line with its neighbours, as a
+   * monitor does: the dithered patterns 640-dot screens use for their colours
+   * (such as the Finder's desktop) show as those colours rather than stripes.
+   */
+  blend640 = true;
   /** Cycle at which the frame being drawn started. */
   frameStart = 0;
   /** The next line to draw. */
@@ -101,6 +107,7 @@ export class Video {
   /** Two dots of margin either side for the colour window. */
   private readonly dots = new Uint8Array(CLASSIC_WIDTH + 4);
   private readonly linePalette = new Uint32Array(16);
+  private readonly blendBuffer = new Uint32Array(ACTIVE_WIDTH);
 
   constructor(
     private readonly switches: VideoSwitches,
@@ -340,6 +347,24 @@ export class Video {
 
   // --- Super Hi-Res ---------------------------------------------------------------------
 
+  /** Each dot of a 640-dot line as half itself and a quarter of each neighbour. */
+  private blendLine(start: number): void {
+    const fb = this.framebuffer;
+    const line = this.blendBuffer;
+    line.set(fb.subarray(start, start + ACTIVE_WIDTH));
+    for (let x = 0; x < ACTIVE_WIDTH; x++) {
+      const left = line[x > 0 ? x - 1 : x];
+      const centre = line[x];
+      const right = line[x < ACTIVE_WIDTH - 1 ? x + 1 : x];
+      let mixed = 0xff000000;
+      for (let shift = 0; shift < 24; shift += 8) {
+        const channel = (((left >> shift) & 0xff) + ((centre >> shift) & 0xff) * 2 + ((right >> shift) & 0xff)) >> 2;
+        mixed |= channel << shift;
+      }
+      fb[start + x] = mixed >>> 0;
+    }
+  }
+
   private superHires(line: number, start: number): void {
     const aux = this.aux;
     const scb = aux[SHR_SCBS + line];
@@ -359,6 +384,7 @@ export class Video {
         fb[x++] = palette[(byte >> 2) & 3];
         fb[x++] = palette[4 + (byte & 3)];
       }
+      if (this.blend640) this.blendLine(start);
       return;
     }
     const fill = (scb & SCB_FILL) !== 0;

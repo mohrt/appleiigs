@@ -46,6 +46,7 @@ const SKIPPED_FIELDS = new Set([
   'framebuffer',
   'dots',
   'linePalette',
+  'blendBuffer',
   // The video's views of banks $E0 and $E1, which are saved as the machine's slow RAM.
   'main',
   'aux',

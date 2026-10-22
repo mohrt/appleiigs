@@ -34,7 +34,7 @@ import { attachToolbar } from './ui/toolbar';
 import type { Monitor } from './video/video';
 
 /** Form fields whose values are remembered between visits. */
-const REMEMBERED_SETTINGS = ['monitor', 'joystick-keys', 'joystick-pad', 'caps-lock', 'warp', 'sound', 'volume'];
+const REMEMBERED_SETTINGS = ['monitor', 'blend-640', 'joystick-keys', 'joystick-pad', 'caps-lock', 'warp', 'sound', 'volume'];
 
 /** How often games' saves to their disks (and the Control Panel's settings) are written to browser storage. */
 const SAVE_INTERVAL_MS = 2000;
@@ -462,6 +462,14 @@ async function main(): Promise<void> {
       focusScreen();
     });
     applyMonitor();
+
+    const blend640 = requireElement<HTMLInputElement>('input[name="blend-640"]');
+    const applyBlend = () => (iigs.video.blend640 = blend640.checked);
+    blend640.addEventListener('change', () => {
+      applyBlend();
+      focusScreen();
+    });
+    applyBlend();
 
     const sound = requireElement<HTMLInputElement>('input[name="sound"]');
     const volume = requireElement<HTMLInputElement>('input[name="volume"]');
