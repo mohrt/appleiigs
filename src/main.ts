@@ -2,10 +2,11 @@ import { AudioOutput } from './audio/audio-output';
 import { Disk35 } from './disk/disk35';
 import { FloppyDisk } from './disk/floppy';
 import { STATE_EXTENSION, filesFrom, firstDisk, readMedia, titleFromFileName } from './disk/load';
-import { is35, type AnyDisk } from './disk/media';
+import { HardDisk } from './disk/hard-disk';
+import { driveKindOf, is35, isHardDisk, type AnyDisk, type DriveKind } from './disk/media';
 import { Emulator } from './emulator';
 import { fetchGame, loadGameManifest, runsOn, type BundledGame } from './games';
-import { CLOCK_HZ } from './iigs';
+import { CLOCK_HZ, HARD_DISK_SLOT } from './iigs';
 import { Modifier } from './io/adb';
 import { GamepadManager, padName, readGamepad } from './io/gamepad-input';
 import { Joystick } from './io/joystick';
@@ -37,9 +38,12 @@ const REMEMBERED_SETTINGS = ['monitor', 'joystick-keys', 'joystick-pad', 'caps-l
 
 /** How often games' saves to their disks (and the Control Panel's settings) are written to browser storage. */
 const SAVE_INTERVAL_MS = 2000;
-/** Drives 0 and 1 are the 3.5" drives in slot 5, 2 and 3 the 5.25" drives in slot 6. */
-const DRIVES = 4;
+/** Drives 0 and 1 are the 3.5" drives in slot 5, 2 and 3 the 5.25" drives in slot 6, and 4 the hard disk in slot 7. */
+const DRIVES = 5;
 const FIRST_525_DRIVE = 2;
+const HARD_DISK_DRIVE = 4;
+/** A hard disk is saved once it has been left alone this long (it can be 32 MB). */
+const HARD_DISK_QUIET_CYCLES = 2 * CLOCK_HZ;
 /** The battery RAM (the Control Panel's settings), kept between visits. */
 const BRAM_KEY = 'appleiigs-bram';
 /** The free games are 5.25" Apple II disks, which the IIgs runs as an enhanced IIe would. */
@@ -55,6 +59,10 @@ const slug = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').re
 
 /** A line about a disk: what kind of image it is. */
 function describeDisk(disk: AnyDisk): string {
+  if (isHardDisk(disk)) {
+    const size = (disk.data.length / 1024 / 1024).toFixed(1).replace(/\.0$/, '');
+    return `${size} MB hard disk image in slot ${HARD_DISK_SLOT}${disk.writeProtected ? ', write-protected' : ''}`;
+  }
   const kind = is35(disk)
     ? '800K disk image'
     : {
@@ -141,15 +149,19 @@ async function main(): Promise<void> {
     };
 
     // --- Drives ----------------------------------------------------------------------
-    const diskIn = (drive: number): AnyDisk | null =>
-      drive < FIRST_525_DRIVE ? iigs.disk2.drives35[drive].disk : iigs.disk2.drives[drive - FIRST_525_DRIVE].disk;
+    const diskIn = (drive: number): AnyDisk | null => {
+      if (drive === HARD_DISK_DRIVE) return iigs.hardDiskCard.disk;
+      return drive < FIRST_525_DRIVE ? iigs.disk2.drives35[drive].disk : iigs.disk2.drives[drive - FIRST_525_DRIVE].disk;
+    };
     const putDisk = (drive: number, disk: AnyDisk | null) => {
-      if (drive < FIRST_525_DRIVE) iigs.insertDisk35(drive, disk as Disk35 | null);
+      if (drive === HARD_DISK_DRIVE) iigs.insertHardDisk(disk as HardDisk | null);
+      else if (drive < FIRST_525_DRIVE) iigs.insertDisk35(drive, disk as Disk35 | null);
       else iigs.insertDisk(drive - FIRST_525_DRIVE, disk as FloppyDisk | null);
     };
-    /** The drive a disk goes in: the one asked for if it is the right size, else the first empty one of its kind. */
-    const driveFor = (large: boolean, wanted: number): number => {
-      const first = large ? 0 : FIRST_525_DRIVE;
+    /** The drive a disk goes in: the one asked for if it takes that kind, else the first empty one of its kind. */
+    const driveFor = (kind: DriveKind, wanted: number): number => {
+      if (kind === 'hard') return HARD_DISK_DRIVE;
+      const first = kind === 'disk35' ? 0 : FIRST_525_DRIVE;
       if (wanted >= first && wanted < first + 2) return wanted;
       return diskIn(first) && !diskIn(first + 1) ? first + 1 : first;
     };
@@ -192,9 +204,11 @@ async function main(): Promise<void> {
     const persistAll = () => Promise.all(Array.from({ length: DRIVES }, (_, drive) => persistDisk(drive)));
     setInterval(() => {
       saveBram(iigs.clock.bram);
-      // Wait for the motor to stop, so a sector being written is finished.
+      // Wait for the motor to stop, so a sector being written is finished; and for the hard disk to rest.
       if (iigs.disk2.spinning(iigs.cycles)) return;
-      void persistAll().catch((error: unknown) => console.warn('Could not keep the disk:', error));
+      const hardDiskBusy = iigs.cycles - iigs.hardDiskUsedAt < HARD_DISK_QUIET_CYCLES;
+      const drives = Array.from({ length: DRIVES }, (_, drive) => drive).filter((drive) => drive !== HARD_DISK_DRIVE || !hardDiskBusy);
+      void Promise.all(drives.map((drive) => persistDisk(drive))).catch((error: unknown) => console.warn('Could not keep the disk:', error));
     }, SAVE_INTERVAL_MS);
     const saveEverything = () => {
       saveBram(iigs.clock.bram);
@@ -230,6 +244,7 @@ async function main(): Promise<void> {
       const name = diskLabels[drive] ?? disk.name;
       const origin = diskSaves.origin(drive);
       if (is35(disk)) return { kind: 'disk35', name, image: disk.toImage(), origin };
+      if (isHardDisk(disk)) return { kind: 'hard', name, image: disk.toImage(), origin };
       return { kind: 'floppy', name, format: disk.format, woz: disk.toWoz(), origin };
     };
     const currentSession = async (): Promise<Session> => {
@@ -256,7 +271,8 @@ async function main(): Promise<void> {
       session.disks.forEach((saved, drive) => {
         let disk: AnyDisk | null = null;
         if (saved?.kind === 'disk35') disk = Disk35.fromImage(saved.name, saved.image);
-        else if (saved) disk = FloppyDisk.restore(saved.name, saved.format, saved.woz);
+        else if (saved?.kind === 'hard') disk = HardDisk.fromImage(saved.name, saved.image);
+        else if (saved?.kind === 'floppy') disk = FloppyDisk.restore(saved.name, saved.format, saved.woz);
         putDisk(drive, disk);
         diskSaves.adopt(drive, saved?.origin ?? null);
         diskLabels[drive] = saved?.name ?? null;
@@ -289,7 +305,7 @@ async function main(): Promise<void> {
         toolbar.showMessage('Save state loaded');
         return;
       }
-      const drive = driveFor(Disk35.isDiskSize(media.data.length), wanted);
+      const drive = driveFor(driveKindOf(media.data.length), wanted);
       await persistDisk(drive);
       const { disk, hasSavedChanges } = await diskSaves.openImage(drive, media.name, media.data);
       const game = bundledGames.find((entry) => entry.file.split('/').pop() === file.name);
@@ -331,14 +347,14 @@ async function main(): Promise<void> {
       },
       onNewSaveDisk: async (drive) => {
         await persistDisk(drive);
-        const { disk, name } = await diskSaves.createSaveDisk(drive, drive < FIRST_525_DRIVE);
+        const { disk, name } = await diskSaves.createSaveDisk(drive, drive < FIRST_525_DRIVE || drive === HARD_DISK_DRIVE);
         putDisk(drive, disk);
         diskLabels[drive] = name;
         diskPanel.showDisk(drive, name, 'blank disk: initialize it from the Finder, ProDOS or the game', false);
         await refreshSaveDisks();
       },
       onInsertSaveDisk: async (id, wanted) => {
-        const drive = driveFor(await diskSaves.isLargeSaveDisk(id), wanted);
+        const drive = driveFor((await diskSaves.isLargeSaveDisk(id)) ? 'disk35' : 'floppy', wanted);
         await persistDisk(drive);
         const opened = await diskSaves.openSaveDisk(drive, id);
         if (!opened) throw new Error('That save disk no longer exists.');

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { BLOCK_BYTES, DISK35_BYTES, Disk35 } from '../src/disk/disk35';
 import { CLOCK_HZ, Iigs } from '../src/iigs';
-import { COPY_BLOCK, ROM_FILES, bootMachine, bootTestDisk, haveRom, screenText } from './helpers/machine';
+import { HardDisk } from '../src/disk/hard-disk';
+import { COPY_BLOCK, ROM_FILES, bootMachine, bootTestDisk, bootTestImage, haveRom, screenText } from './helpers/machine';
 
 /** A blank ROM 3 whose code at $FF:F000 loops, which is enough to drive the bus by hand. */
 function testMachine(): Iigs {
@@ -142,5 +143,17 @@ describe.each(Object.entries(ROM_FILES))('%s', (_, file) => {
     expect(disk.dirty).toBe(true);
     const saved = disk.toImage().subarray(COPY_BLOCK * BLOCK_BYTES, COPY_BLOCK * BLOCK_BYTES + 4);
     expect(String.fromCharCode(...saved)).toBe('LAST');
+  });
+
+  it.skipIf(!haveRom(file))('boots a hard disk in slot 7, which reads and writes blocks through its card', () => {
+    const gs = bootMachine(file);
+    const disk = HardDisk.fromImage('hard-disk.hdv', bootTestImage(7, 4096));
+    gs.insertHardDisk(disk);
+    gs.powerOn();
+    gs.runCycles(Math.round(CLOCK_HZ * 6));
+    expect([gs.ram[0x0301], gs.ram[0x0300], gs.ram[0x0302], gs.ram[0x0303]]).toEqual([0xa5, 0, 0, 0]);
+    expect(String.fromCharCode(...gs.ram.subarray(0x3000, 0x3004))).toBe('LAST');
+    expect(disk.dirty).toBe(true);
+    expect(String.fromCharCode(...disk.block(COPY_BLOCK).subarray(0, 4))).toBe('LAST');
   });
 });

@@ -1,4 +1,4 @@
-import { Disk35 } from './disk35';
+import { HardDisk } from './hard-disk';
 import { isZip, usableFilesInZip } from './zip';
 
 export const STATE_EXTENSION = '.gsstate';
@@ -25,7 +25,7 @@ export async function filesFrom(file: File): Promise<File[]> {
   const head = new Uint8Array(await file.slice(0, 4).arrayBuffer());
   if (!isZip(head)) return [file];
   const files = await usableFilesInZip(new Uint8Array(await file.arrayBuffer()));
-  if (files.length === 0) throw new Error(`${file.name} has no Apple II or IIgs disk images (.po, .2mg, .dsk, .do, .nib or .woz) in it.`);
+  if (files.length === 0) throw new Error(`${file.name} has no Apple II or IIgs disk images (.po, .2mg, .hdv, .dsk, .do, .nib or .woz) in it.`);
   return files;
 }
 
@@ -35,15 +35,15 @@ export async function readMedia(file: File): Promise<Media> {
   const name = file.name.toLowerCase();
   if (name.endsWith(STATE_EXTENSION) || isGzip(data)) return { kind: 'state', bytes: data };
   if (TWO_IMG.every((byte, i) => data[i] === byte)) return { kind: 'disk', ...unwrap2mg(file.name, data) };
-  if (name.endsWith('.hdv') || (data.length > 300_000 && !Disk35.isDiskSize(data.length))) {
-    throw new Error(`${file.name} is a hard disk image, which this IIgs can't use yet: it takes 800K 3.5" disks (.po, .2mg) and 5.25" disks.`);
+  if (data.length > 300_000 && data.length !== 819_200 && !HardDisk.isDiskSize(data.length)) {
+    throw new Error(`${file.name} is ${data.length.toLocaleString('en')} bytes: not an 800K disk, nor a hard disk of up to 32 MB in 512-byte blocks.`);
   }
   return { kind: 'disk', name: file.name, data };
 }
 
 /** "Ultima IV (Disk 1 of 4).woz" → "Ultima IV (Disk 1 of 4)". */
 export function titleFromFileName(name: string): string {
-  return name.replace(/\.(dsk|do|po|nib|woz|2mg|zip)$/i, '').trim() || name;
+  return name.replace(/\.(dsk|do|po|nib|woz|2mg|hdv|zip)$/i, '').trim() || name;
 }
 
 /** The disk to put in first from several: the boot or program disk of a set, otherwise the first by name ("Disk 1"). */

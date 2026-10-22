@@ -171,10 +171,25 @@
             <button type="button" data-action="download" title="The disk as it is now, saved games included">Download</button>
           </span>
         </div>
+        <div class="drive" data-drive="4" data-state="empty">
+          <span class="drive-led" title="In use"></span>
+          <strong class="drive-label">Hard disk</strong>
+          <span class="disk-name">No disk</span>
+          <span class="disk-detail"></span>
+          <span class="disk-saved" hidden>has saved changes</span>
+          <span class="drive-actions">
+            <select class="swap-disk" aria-label="Swap a disk of the set into the hard disk" hidden></select>
+            <button type="button" data-action="choose">Insert disk...</button>
+            <button type="button" data-action="eject">Eject</button>
+            <button type="button" data-action="revert" hidden title="Forget the changes made to this disk">Revert</button>
+            <button type="button" data-action="download" title="The disk as it is now, changes included">Download</button>
+          </span>
+        </div>
         <p class="disk-hint">
           Drop disk images anywhere on the page: 800K ones (.po, .2mg) go in a 3.5" drive, 5.25" ones (.dsk, .do, .po,
-          .nib, .woz) in a 5.25" drive, or drop onto a drive's row. Several at once, such as all the disks of a set, give
-          each drive a Swap menu for changing disks. The IIgs starts from the 5.25" drives before the 3.5" ones.
+          .nib, .woz) in a 5.25" drive, and hard disks of up to 32 MB (.hdv, .po, .2mg) in slot 7, or drop onto a drive's
+          row. Several at once, such as all the disks of a set, give each drive a Swap menu. The IIgs starts from the hard
+          disk first, then the 5.25" drives, then the 3.5" ones.
         </p>
         <div class="bundled-games" hidden>
           <p class="bundled-games-row">
@@ -208,7 +223,7 @@
         </p>
         <p class="disk-drop-hint">Release to insert</p>
         <p class="disk-message" role="status"></p>
-        <input type="file" name="disk-file" accept=".po,.2mg,.dsk,.do,.nib,.woz,.zip,.gsstate" multiple hidden />
+        <input type="file" name="disk-file" accept=".po,.2mg,.hdv,.dsk,.do,.nib,.woz,.zip,.gsstate" multiple hidden />
       </section>
 
       <section id="controls" class="controls" aria-label="Controllers">

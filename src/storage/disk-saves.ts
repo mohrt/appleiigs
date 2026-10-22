@@ -29,8 +29,8 @@ export async function fingerprint(bytes: Uint8Array): Promise<string> {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-/** The drives: two 3.5" and two 5.25". */
-const DRIVES = 4;
+/** The drives: two 3.5", two 5.25" and the hard disk. */
+const DRIVES = 5;
 
 const sameBytes = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.every((byte, i) => byte === b[i]);
 

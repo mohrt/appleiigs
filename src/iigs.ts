@@ -2,8 +2,10 @@ import { Cpu65816, type Bus816 } from './cpu/cpu65816';
 import { Disk2 } from './disk/disk2';
 import type { Disk35 } from './disk/disk35';
 import type { FloppyDisk } from './disk/floppy';
+import type { HardDisk } from './disk/hard-disk';
 import { Adb, Modifier } from './io/adb';
 import { Clock } from './io/clock';
+import { HardDiskCard } from './io/hard-disk-card';
 import { Scc } from './io/scc';
 import { AudioMixer } from './sound/audio-mixer';
 import { SoundGlu } from './sound/sound-glu';
@@ -21,6 +23,9 @@ const FAST_TICKS = 5;
 /** Mega II cycles a second: the Apple II's 1.02 MHz, which the machine's time is counted in. */
 export const CLOCK_HZ = (MASTER_HZ * CYCLES_PER_LINE) / TICKS_PER_LINE;
 export const DISK_SLOT = 6;
+export const HARD_DISK_SLOT = 7;
+/** The hard disk's light stays on this long after it is used. */
+const HARD_DISK_LIGHT_CYCLES = 100_000;
 /** Each count of a paddle's value holds its timer for about 11 µs. */
 const PADDLE_CYCLES_PER_UNIT = 11;
 export const PADDLE_CENTRE = 127;
@@ -132,6 +137,9 @@ export class Iigs implements Bus816 {
   readonly audio = new AudioMixer();
   readonly scc = new Scc();
   readonly disk2: Disk2;
+  readonly hardDiskCard: HardDiskCard;
+  /** When the hard disk was last used. */
+  hardDiskUsedAt = -HARD_DISK_LIGHT_CYCLES;
 
   /** The master clock. */
   ticks = 0;
@@ -192,6 +200,7 @@ export class Iigs implements Bus816 {
     };
     this.disk2 = new Disk2(new Uint8Array(0x100));
     this.disk2.iwm = true;
+    this.hardDiskCard = new HardDiskCard(this, HARD_DISK_SLOT);
     this.audio.source = (cycle) => this.sound.doc.run(cycle);
     this.sound.doc.onOutput = (level, cycle) => this.audio.setDocLevel((level * this.sound.volume) / 15, cycle);
     this.setRoms(roms);
@@ -282,8 +291,9 @@ export class Iigs implements Bus816 {
     return iwm.spinning(now) && drive.motorOn && drive.disk !== null && now - iwm.lastAccess < DISK_BUSY_WINDOW;
   }
 
-  /** Whether a drive's light is on: drives 0-1 are the 3.5" ones, 2-3 the 5.25". */
+  /** Whether a drive's light is on: drives 0-1 are the 3.5" ones, 2-3 the 5.25", and 4 the hard disk. */
   driveActive(drive: number): boolean {
+    if (drive === 4) return this.cycles - this.hardDiskUsedAt < HARD_DISK_LIGHT_CYCLES;
     const iwm = this.disk2;
     const is35 = drive < 2;
     if (iwm.drive35 !== is35 || iwm.selected !== drive % 2 || !iwm.spinning(this.cycles)) return false;
@@ -460,6 +470,8 @@ export class Iigs implements Bus816 {
     const slot = (addr >> 8) & 0x0f;
     const internal =
       addr >= 0xc800 || m.intCxRom || (slot === 3 ? !m.slotC3Rom : (this.slotRomSelect & (1 << slot)) === 0);
+    // A hard disk puts its card in slot 7, whatever the Control Panel says.
+    if (slot === HARD_DISK_SLOT && addr < 0xc800 && this.hardDiskCard.disk) return this.hardDiskCard.rom[addr & 0xff];
     return internal ? this.rom[this.romOffset(ROM_LAST_BANK, addr)] : this.video.floatingBus(this.now);
   }
 
@@ -512,7 +524,10 @@ export class Iigs implements Bus816 {
     // $C071-$C07F show the ROM: the firmware's interrupt entry points are there.
     else if (reg > 0x70 && reg < 0x80) return this.rom[this.romOffset(ROM_LAST_BANK, 0xc000 | reg)];
     else if (reg >= 0x80 && reg < 0x90) this.languageCard(reg, value !== null);
-    else if (reg >= 0x90 && (reg >> 4) - 8 === DISK_SLOT) {
+    else if (reg >= 0x90 && (reg >> 4) - 8 === HARD_DISK_SLOT && this.hardDiskCard.disk) {
+      this.hardDiskUsedAt = this.now;
+      return this.hardDiskCard.io(reg & 0x0f, value);
+    } else if (reg >= 0x90 && (reg >> 4) - 8 === DISK_SLOT) {
       this.disk2.drive35 = (this.diskReg & DISKREG_35) !== 0;
       this.disk2.headSelect = (this.diskReg & DISKREG_HEAD) !== 0;
       return this.disk2.access(reg & 0x0f, value, this.now);
@@ -734,6 +749,27 @@ export class Iigs implements Bus816 {
   /** A 3.5" disk in drive 1 or 2 of the disk port (slot 5). */
   insertDisk35(drive: number, disk: Disk35 | null): void {
     this.disk2.drives35[drive].insert(disk);
+  }
+
+  /** A hard disk image in slot 7, or null to take the card out. */
+  insertHardDisk(disk: HardDisk | null): void {
+    this.hardDiskCard.disk = disk;
+  }
+
+  /** A byte of bank $00 as the CPU would read it, without taking any time (for the hard disk card). */
+  peek(addr: number): number {
+    const memory = this.readMem[addr >> 8];
+    return memory ? memory[this.readBase[addr >> 8] + (addr & 0xff)] : 0;
+  }
+
+  /** Writes a byte of bank $00 as the CPU would, shadowing included, without taking any time. */
+  poke(addr: number, value: number): void {
+    const page = addr >> 8;
+    const memory = this.writeMem[page];
+    if (!memory) return;
+    memory[this.writeBase[page] + (addr & 0xff)] = value;
+    const shadow = this.writeShadow[page];
+    if (shadow >= 0) this.slowRam[shadow + (addr & 0xff)] = value;
   }
 
   // --- Save states ----------------------------------------------------------------

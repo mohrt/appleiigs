@@ -6,11 +6,11 @@ import type { KeyValueStore } from './store';
 
 /**
  * A disk in a drive when the state was saved, and where its saves go: a
- * 5.25" disk's tracks then (as WOZ) and its format, or an 800K disk's blocks.
+ * 5.25" disk's tracks then (as WOZ) and its format, or an 800K or hard disk's blocks.
  */
 export type SessionDisk =
   | { kind: 'floppy'; name: string; format: DiskFormat; woz: Uint8Array; origin: DiskOrigin | null }
-  | { kind: 'disk35'; name: string; image: Uint8Array; origin: DiskOrigin | null };
+  | { kind: 'disk35' | 'hard'; name: string; image: Uint8Array; origin: DiskOrigin | null };
 
 /** Everything needed to resume: the machine, its ROMs and the disks in its drives. */
 export interface Session {

@@ -69,7 +69,7 @@ export function readZip(data: Uint8Array): ZipEntry[] {
 }
 
 /** File types the emulator can use, in the order a zip's contents are preferred. */
-const PREFERRED_EXTENSIONS = ['.woz', '.dsk', '.do', '.po', '.nib', '.2mg', '.gsstate'];
+const PREFERRED_EXTENSIONS = ['.woz', '.dsk', '.do', '.po', '.nib', '.2mg', '.hdv', '.gsstate'];
 
 /** The usable files in a zip, best first (disk images, then save states; then by name, so "Disk 1" comes first). */
 export async function usableFilesInZip(data: Uint8Array): Promise<File[]> {
