@@ -1,0 +1,178 @@
+{
+  "games": [
+    {
+      "title": "A2Bejwld",
+      "file": "a2bejwld.dsk",
+      "url": "https://github.com/jeremysrand/a2bejwld/releases/download/2.7/a2bejwld.dsk",
+      "sha256": "39cf31da83605acc8df1901c19e99948a9da02a1bb8d40388c619a75bf887353",
+      "credit": "Jeremy Rand",
+      "license": "MIT",
+      "licenseFile": "https://raw.githubusercontent.com/jeremysrand/a2bejwld/62da1e9bf26db9e3dfe01c024c6a36509e14adc2/LICENSE",
+      "sourceUrl": "https://github.com/jeremysrand/a2bejwld",
+      "requires": "iie",
+      "hint": "Match three jewels, with Mockingboard sound. Arrow keys or I J K M move the selection; hold an Apple key (or the joystick button) and move to swap two jewels. H gives a hint, Q quits."
+    },
+    {
+      "title": "Apple2048",
+      "file": "apple2048.dsk",
+      "url": "https://github.com/jeremysrand/apple2048/releases/download/v1.0.1/apple2048-boot.dsk",
+      "sha256": "5ce35a9f62457a530c9bc6b01b42f87ce2fbac9dc9edbbd864c16f68789921c5",
+      "credit": "Jeremy Rand",
+      "license": "MIT",
+      "licenseFile": "https://raw.githubusercontent.com/jeremysrand/apple2048/1fdc2586afa6899b2817261681d4eb21e77f366e/LICENSE",
+      "sourceUrl": "https://github.com/jeremysrand/apple2048",
+      "requires": "enhanced-iie",
+      "hint": "Arrow keys or I J K M slide the tiles. R starts a new game, S switches sound, H shows the help again."
+    },
+    {
+      "title": "Deflection",
+      "file": "deflection.po",
+      "url": "https://github.com/randall-frank/deflection/releases/download/v1.2.1/Deflection_Release.po",
+      "sha256": "24890966dfffef2fa046cf008a642ea63297e3b69d361be13a41a7e2c6b92f0c",
+      "credit": "Randall Frank",
+      "license": "MIT",
+      "licenseFile": "https://raw.githubusercontent.com/randall-frank/deflection/b3f74b601db794b618487fd55c86ba8e24534a4a/LICENSE",
+      "sourceUrl": "https://github.com/randall-frank/deflection",
+      "requires": "iiplus",
+      "hint": "A laser board game for two players taking turns. Arrow keys or I J K M move the cursor, Space picks up and places a piece. Protect your key blocks."
+    },
+    {
+      "title": "Escape",
+      "file": "escape.dsk",
+      "url": "https://raw.githubusercontent.com/Pixinn/rogue-like/261b7276b5839246001facf25e4f0323bd423d60/escape.dsk",
+      "sha256": "85cab2fca3c0b6c1e035dded42161914df01c9deba3d0f72c55456749adf6fd1",
+      "credit": "Christophe Meneboeuf (Pixinn)",
+      "license": "GNU GPL v3",
+      "licenseFile": "https://raw.githubusercontent.com/Pixinn/rogue-like/261b7276b5839246001facf25e4f0323bd423d60/LICENSE",
+      "sourceUrl": "https://github.com/Pixinn/rogue-like",
+      "requires": "ii",
+      "hint": "A roguelike. N starts a new game; I J K L move through the dungeon and Tab shows the map."
+    },
+    {
+      "title": "Flapple Bird",
+      "file": "flapple-bird.po",
+      "url": "https://github.com/digarok/flapple/releases/download/v1.1/flapple140.po",
+      "sha256": "cdf164133724b8d1978ea128735d554855f8e55e5efd5514cb92716a8d94adb9",
+      "credit": "Dagen Brock",
+      "license": "GNU GPL v2",
+      "licenseFile": "https://raw.githubusercontent.com/digarok/flapple/2a002b1c07a70b843b7babab20994735519192a8/LICENSE",
+      "sourceUrl": "https://github.com/digarok/flapple",
+      "requires": "iie",
+      "hint": "Any key or the joystick button flaps. P or Esc pauses, Q quits."
+    },
+    {
+      "title": "Froggo",
+      "file": "froggo.dsk",
+      "url": "https://raw.githubusercontent.com/pmwasson/froggo/9a3792c3a7aa85436c736725b05335c85d10e402/disk/froggo.dsk",
+      "sha256": "a5dcd3585e54a142a7c75d7f4abae84c871ee8a9993680929f65ba12c093d3f8",
+      "credit": "Paul Wasson (music by Ben Wasson)",
+      "license": "MIT",
+      "licenseFile": "https://raw.githubusercontent.com/pmwasson/froggo/9a3792c3a7aa85436c736725b05335c85d10e402/LICENSE",
+      "sourceUrl": "https://github.com/pmwasson/froggo",
+      "requires": "iie",
+      "hint": "In double hi-res. A and Z hop up and down, the left and right arrows move sideways, Esc opens the menu."
+    },
+    {
+      "title": "Fujirun",
+      "file": "fujirun.dsk",
+      "url": "https://raw.githubusercontent.com/robmcmullen/fujirun/057e46d44acea5ac07bc714db2ddaf574b2d8f95/fujirun-v1.dsk",
+      "sha256": "8ba4452cdb280cea2e37bc06eae4abde7767fd26e8c58ffdf8c3239f9ee72008",
+      "credit": "Rob McMullen",
+      "license": "Mozilla Public License 2.0",
+      "licenseFile": "https://raw.githubusercontent.com/robmcmullen/fujirun/057e46d44acea5ac07bc714db2ddaf574b2d8f95/LICENSE",
+      "sourceUrl": "https://github.com/robmcmullen/fujirun",
+      "requires": "ii",
+      "hint": "Arrow keys move the apple along the maze lines: trace round every box to fill it while dodging the Booataris."
+    },
+    {
+      "title": "Kaverns of KFest",
+      "file": "kaverns-of-kfest.dsk",
+      "url": "https://raw.githubusercontent.com/savetz/Kaverns/92224e9bb39ee1c18db82f9730f8c2191fd88022/Kaverns%20of%20Kfest%201.1.dsk",
+      "sha256": "2891d82ebbf3ecc1d2cad52f836d01d979a5cf291bf660b4dca94891647fcf39",
+      "credit": "Kevin Savetz",
+      "license": "MIT",
+      "licenseFile": "https://raw.githubusercontent.com/savetz/Kaverns/92224e9bb39ee1c18db82f9730f8c2191fd88022/LICENSE",
+      "sourceUrl": "https://github.com/savetz/Kaverns",
+      "requires": "iiplus",
+      "hint": "Press a key to begin, then the arrow keys steer through the cave. Take green blocks, avoid walls and grey blocks; 10 hits ends the game."
+    },
+    {
+      "title": "Light Cycles 3D",
+      "file": "light-cycles-3d.po",
+      "url": "https://raw.githubusercontent.com/dschmenk/LightCycles/0176609242ff7cb170c57eeedba61763832353d9/lightcycles.po",
+      "sha256": "4bab407ca1c33b1b64a1100b1dba81acc2127061b8b84e949f78c21ea10021f6",
+      "credit": "David Schmenk (The 8-Bit Bunch)",
+      "license": "GNU GPL v3",
+      "licenseFile": "https://raw.githubusercontent.com/dschmenk/LightCycles/0176609242ff7cb170c57eeedba61763832353d9/LICENSE.txt",
+      "sourceUrl": "https://github.com/dschmenk/LightCycles",
+      "requires": "iiplus",
+      "hint": "Keep Caps Lock on. Player 1 turns with A and D (S for turbo), player 2 with J and L (K for turbo). Esc pauses."
+    },
+    {
+      "title": "Million Perfect Letters",
+      "file": "million-perfect-letters.po",
+      "url": "https://github.com/a2-4am/million-perfect-letters/releases/download/v1.2/Million.Perfect.Letters.v1.2.po",
+      "sha256": "02e94b1f5379e8d94e35daac47e4cb4b33b4aef264aee31880d46a1c6325b609",
+      "credit": "4am",
+      "license": "GNU GPL v3 or later",
+      "licenseFile": [
+        "https://raw.githubusercontent.com/a2-4am/million-perfect-letters/8b78876300479bb4787b34cce45e852bedf49dd4/LICENSE",
+        "https://raw.githubusercontent.com/a2-4am/million-perfect-letters/8b78876300479bb4787b34cce45e852bedf49dd4/res/gpl-3.0.txt"
+      ],
+      "sourceUrl": "https://github.com/a2-4am/million-perfect-letters",
+      "requires": "ii",
+      "hint": "A word puzzle with Mockingboard music. Left and right pick a column, up and down slide it, until every row spells a word. Ctrl-R restarts the puzzle, Esc goes back."
+    },
+    {
+      "title": "Moria8",
+      "file": "moria8.po",
+      "url": "https://github.com/dcgibbons/moria8/releases/download/v1.5.0/moria8-apple2.po",
+      "sha256": "9b3b394aed072fdc829f9b3bc1a6b452f1c117b9cb1b5de6870f8db65f938e72",
+      "credit": "Chad Gibbons (after Umoria)",
+      "license": "GNU GPL v3 or later",
+      "licenseFile": "https://raw.githubusercontent.com/dcgibbons/moria8/9368eab76558e7e0b1e76a7ef1006ed95cf41727/LICENSE",
+      "sourceUrl": "https://github.com/dcgibbons/moria8",
+      "requires": "iie",
+      "hint": "The Dungeons of Moria in 80 columns. Create a character, then H J K L or the arrows move and ? lists every command. Saving needs a save disk (New blank disk) set up under Disk Setup."
+    },
+    {
+      "title": "Painter",
+      "file": "painter.po",
+      "url": "https://github.com/randall-frank/painter/releases/download/v1.0.2/Painter_Release.po",
+      "sha256": "9a0edf364b536b4e8c6bef77fa44d654ed742df9bc04fd0e5573d0c2e7331d47",
+      "credit": "Randall Frank",
+      "license": "MIT",
+      "licenseFile": "https://raw.githubusercontent.com/randall-frank/painter/64fbf20d883e55c46ec1c8d5afc1d8ec756b79a1/LICENSE",
+      "sourceUrl": "https://github.com/randall-frank/painter",
+      "requires": "iiplus",
+      "hint": "Needs a joystick (a gamepad, or keys for it below). Space starts; the stick moves the cursor, button 0 draws walls and button 1 pours paint to drown the bugs."
+    },
+    {
+      "title": "Tom Bombem",
+      "file": "tom-bombem.dsk",
+      "url": "https://raw.githubusercontent.com/deater/dos33fsprogs/d321fbc57df4d012ba881e2815b669d5d32f31d2/games/tb_6502/tb_6502.dsk",
+      "sha256": "74480a3ec2019e4f670876212b87b5ff5ebac8a58f9ddb6a795cc369c3262443",
+      "credit": "Vince Weaver (VMW Software)",
+      "license": "GNU GPL v2",
+      "licenseFile": [
+        "https://raw.githubusercontent.com/deater/dos33fsprogs/d321fbc57df4d012ba881e2815b669d5d32f31d2/LICENSE",
+        "https://raw.githubusercontent.com/spdx/license-list-data/31ba1a50e5397e00a304dbadc76531740e89ee48/text/GPL-2.0-only.txt"
+      ],
+      "sourceUrl": "https://github.com/deater/dos33fsprogs/tree/master/games/tb_6502",
+      "requires": "iiplus",
+      "hint": "Arrow keys or I J K M move and Space fires. H shows help, S switches sound, P pauses."
+    },
+    {
+      "title": "Totally",
+      "file": "totally.po",
+      "url": "https://github.com/randall-frank/totally/releases/download/v1.3.3/Totally_Release.po",
+      "sha256": "bc64f1bde731c0c9fb4f332cf163303075438173d19a457a00060037130f5c77",
+      "credit": "Randall Frank",
+      "license": "MIT",
+      "licenseFile": "https://raw.githubusercontent.com/randall-frank/totally/e2a3e383b5f8f24f0a40ef37689ee315e603f43c/LICENSE",
+      "sourceUrl": "https://github.com/randall-frank/totally",
+      "requires": "ii",
+      "hint": "Press J for the joystick (recommended) or K for the keyboard: A and Z go up and down, the arrows left and right, / stops and Space fires."
+    }
+  ]
+}

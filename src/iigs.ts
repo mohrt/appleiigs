@@ -5,7 +5,9 @@ import type { FloppyDisk } from './disk/floppy';
 import { Adb, Modifier } from './io/adb';
 import { Clock } from './io/clock';
 import { Scc } from './io/scc';
+import { AudioMixer } from './sound/audio-mixer';
 import { SoundGlu } from './sound/sound-glu';
+import { captureState, restoreState, type StateNode } from './state/snapshot';
 import { CLASSIC_LINES, CYCLES_PER_FRAME, CYCLES_PER_LINE, Video, VideoSwitches } from './video/video';
 
 /** The master clock, 14.31818 MHz, counted in ticks. */
@@ -56,6 +58,8 @@ const VGC_SECOND = 0x40;
 const DISKREG_35 = 0x40;
 /** $C031: the SEL line, which picks the 3.5" drive's upper head. */
 const DISKREG_HEAD = 0x80;
+/** The drive counts as busy for this long after the last access while the motor turns. */
+const DISK_BUSY_WINDOW = 60_000;
 
 export interface Roms {
   /** ROM 01's 128K (banks $FE-$FF) or ROM 3's 256K (banks $FC-$FF). */
@@ -123,6 +127,7 @@ export class Iigs implements Bus816 {
   readonly adb: Adb;
   readonly clock = new Clock();
   readonly sound = new SoundGlu();
+  readonly audio = new AudioMixer();
   readonly scc = new Scc();
   readonly disk2: Disk2;
 
@@ -254,7 +259,25 @@ export class Iigs implements Bus816 {
       if (now >= this.nextVbl) this.verticalBlank();
       this.video.catchUp(now);
     }
+    this.audio.run(now);
     return now - start;
+  }
+
+  /** A disk is being read or written: a drive's motor turns and the IWM was used recently. */
+  diskBusy(): boolean {
+    const now = this.cycles;
+    const iwm = this.disk2;
+    if (!iwm.drive35) return iwm.busy(now);
+    const drive = iwm.drive35Selected;
+    return iwm.spinning(now) && drive.motorOn && drive.disk !== null && now - iwm.lastAccess < DISK_BUSY_WINDOW;
+  }
+
+  /** Whether a drive's light is on: drives 0-1 are the 3.5" ones, 2-3 the 5.25". */
+  driveActive(drive: number): boolean {
+    const iwm = this.disk2;
+    const is35 = drive < 2;
+    if (iwm.drive35 !== is35 || iwm.selected !== drive % 2 || !iwm.spinning(this.cycles)) return false;
+    return !is35 || iwm.drive35Selected.motorOn;
   }
 
   private get irqAsserted(): boolean {
@@ -495,7 +518,9 @@ export class Iigs implements Bus816 {
       case 0x2d: return this.slotRomSelect;
       case 0x2e: return this.verticalCount >> 1;
       case 0x2f: return ((this.verticalCount & 1) << 7) | this.horizontalCount;
-      case 0x30: return this.video.floatingBus(this.now);
+      case 0x30:
+        this.audio.toggleSpeaker(this.now);
+        return this.video.floatingBus(this.now);
       case 0x31: return this.diskReg;
       case 0x33: return this.clock.data;
       case 0x34: return this.clock.control | v.border;
@@ -525,6 +550,7 @@ export class Iigs implements Bus816 {
         break;
       case 0x2b: this.languageReg = value; break;
       case 0x2d: this.slotRomSelect = value; break;
+      case 0x30: this.audio.toggleSpeaker(this.now); break;
       case 0x31: this.diskReg = value; break;
       // Writing 0 to bit 5 or 6 clears the scanline or one-second interrupt.
       case 0x32: this.vgcInterrupts &= value | ~(VGC_SCANLINE | VGC_SECOND); break;
@@ -688,5 +714,17 @@ export class Iigs implements Bus816 {
   /** A 3.5" disk in drive 1 or 2 of the disk port (slot 5). */
   insertDisk35(drive: number, disk: Disk35 | null): void {
     this.disk2.drives35[drive].insert(disk);
+  }
+
+  // --- Save states ----------------------------------------------------------------
+
+  saveState(): StateNode {
+    return captureState(this);
+  }
+
+  loadState(state: StateNode): void {
+    restoreState(this, state);
+    this.updatePages();
+    this.audio.resync(this.cycles);
   }
 }

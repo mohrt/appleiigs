@@ -218,6 +218,21 @@ export class Disk35 {
     return size === DISK35_BYTES;
   }
 
+  /** An empty disk: every block zero, for initializing from GS/OS or ProDOS. */
+  static blank(name: string): Disk35 {
+    return Disk35.fromImage(name, new Uint8Array(DISK35_BYTES));
+  }
+
+  /** The file extension the disk saves as. */
+  get extension(): string {
+    return '.po';
+  }
+
+  /** Whether every sector still reads back (it would not after a copy-protected reformat). */
+  get savesCompletely(): boolean {
+    return this.tracks.every((bits, i) => readSectors35(bits).size === sectorsOnCylinder(i >> 1));
+  }
+
   static fromImage(name: string, data: Uint8Array): Disk35 {
     const blocks = imageBlocks(name, data);
     if (blocks.length !== DISK35_BYTES) throw new Error(`${name} isn't an 800K disk.`);

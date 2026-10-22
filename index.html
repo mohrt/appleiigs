@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YX2PYPGYW5"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-YX2PYPGYW5');
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#111111" />
+    <title>Apple IIgs</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <main>
+      <div class="screen-frame">
+        <canvas id="screen" width="704" height="464" tabindex="0" aria-label="Apple IIgs screen"></canvas>
+        <p class="paused-label">Paused</p>
+        <section id="rom-setup" class="rom-setup" aria-labelledby="rom-setup-title" hidden>
+          <h1 id="rom-setup-title">First, choose your IIgs and load its ROMs</h1>
+          <p class="rom-setup-lead">
+            The IIgs can't switch on without the ROM chips Apple built into it. They are still under copyright, so they
+            aren't included here: choose or drop your own ROM image files. They stay in this browser and are never sent
+            anywhere. The browser remembers them, so you only need to do this once.
+          </p>
+          <p class="setup-row machine-choice">
+            <label>
+              Machine
+              <select name="machine" aria-label="Machine">
+                <option value="rom3" selected>Apple IIgs, ROM 3 (1989): the last and most compatible</option>
+                <option value="rom01">Apple IIgs, ROM 01 (1987): the first widely sold</option>
+              </select>
+            </label>
+          </p>
+          <ul class="rom-list">
+            <li data-rom="rom3" data-machines="rom3">
+              <p class="rom-heading"><strong>Apple IIgs ROM 3</strong> <span class="rom-need">Required</span></p>
+              <p class="rom-detail">
+                The toolbox, Applesoft BASIC, the Monitor and the built-in firmware: 256 KB (262,144 bytes), chips 341-0737
+                and 341-0748 together.
+              </p>
+              <p class="rom-names">Often named <code>apple2gs.rom</code> or <code>APPLE2GS.ROM3</code></p>
+              <p class="rom-status"></p>
+            </li>
+            <li data-rom="rom01" data-machines="rom01">
+              <p class="rom-heading"><strong>Apple IIgs ROM 01</strong> <span class="rom-need">Required</span></p>
+              <p class="rom-detail">The same for ROM 01: 128 KB (131,072 bytes), chip 342-0077-B.</p>
+              <p class="rom-names">Often named <code>apple2gs_rom01.rom</code> or <code>342-0077-b</code></p>
+              <p class="rom-status"></p>
+            </li>
+            <li data-rom="video" data-machines="rom3 rom01">
+              <p class="rom-heading"><strong>Character ROM</strong> <span class="rom-need">Required</span></p>
+              <p class="rom-detail">The characters of the text screens, with MouseText, chip 341-0170. 4 KB (4,096 bytes).</p>
+              <p class="rom-names">Often named <code>apple2gs.chr</code> or <code>341-0170-a.chr</code></p>
+              <p class="rom-status"></p>
+            </li>
+          </ul>
+          <p class="rom-tip">
+            Pick several files at once, or a .zip containing them (a whole ROM collection works too). Dumps with their
+            banks in another order are put right.
+          </p>
+          <div class="rom-actions">
+            <button type="button" class="primary" data-action="choose-roms">Choose ROM files...</button>
+            <button type="button" data-action="start" disabled>Start the IIgs</button>
+            <button type="button" data-action="back" hidden>Back to the IIgs</button>
+            <button type="button" data-action="forget-roms" hidden>Forget all ROMs</button>
+          </div>
+          <p class="rom-message" role="alert"></p>
+          <p class="rom-storage-note"></p>
+          <p class="rom-drop-hint">Release to load these ROMs</p>
+          <input type="file" name="rom-files" multiple hidden />
+        </section>
+      </div>
+
+      <section id="toolbar" class="toolbar" aria-label="Apple IIgs">
+        <span class="toolbar-group">
+          <button type="button" data-action="pause">Pause</button>
+          <button type="button" data-action="reset" title="Ctrl-Reset (Ctrl+F12): stops the program, keeping memory and the disks">
+            Ctrl-Reset
+          </button>
+          <button type="button" data-action="power" title="Switch the IIgs off and on again: it starts from the disks in the drives">
+            Restart
+          </button>
+          <button type="button" data-action="control-panel" title="Ctrl-Command-Esc (Ctrl+Left Alt+Esc): the desk accessories, with the Control Panel">
+            Control Panel
+          </button>
+          <button type="button" data-action="fullscreen" title="Esc leaves full screen">Full screen</button>
+          <button type="button" data-action="machine-setup" title="ROM 3 or ROM 01, and the ROM files">
+            Machine setup...
+          </button>
+          <select name="monitor" aria-label="Monitor">
+            <option value="color" selected>Colour monitor</option>
+            <option value="green">Green monitor</option>
+            <option value="amber">Amber monitor</option>
+            <option value="white">White monitor</option>
+          </select>
+        </span>
+        <span class="toolbar-group">
+          <button type="button" data-action="save-state" title="Save the whole IIgs, disks included, to come back to later">
+            Save state
+          </button>
+          <select name="state-slot" aria-label="Save states"></select>
+          <button type="button" data-action="load-state">Load</button>
+          <button type="button" data-action="delete-state">Delete</button>
+          <button type="button" data-action="export-state" title="Download the current state as a file">Export</button>
+          <button type="button" data-action="import-state">Import...</button>
+        </span>
+        <span class="toolbar-message" role="status"></span>
+        <input type="file" name="state-file" accept=".gsstate" hidden />
+      </section>
+
+      <section id="disk-panel" class="disk-panel" aria-label="Disk drives">
+        <div class="drive" data-drive="0" data-state="empty">
+          <span class="drive-led" title="In use"></span>
+          <strong class="drive-label">3.5" drive 1</strong>
+          <span class="disk-name">No disk</span>
+          <span class="disk-detail"></span>
+          <span class="disk-saved" hidden>has saved games</span>
+          <span class="drive-actions">
+            <select class="swap-disk" aria-label="Swap a disk of the set into 3.5&quot; drive 1" hidden></select>
+            <button type="button" data-action="choose">Insert disk...</button>
+            <button type="button" data-action="eject">Eject</button>
+            <button type="button" data-action="revert" hidden title="Forget what games saved to this disk">Revert</button>
+            <button type="button" data-action="download" title="The disk as it is now, saved games included">Download</button>
+          </span>
+        </div>
+        <div class="drive" data-drive="1" data-state="empty">
+          <span class="drive-led" title="In use"></span>
+          <strong class="drive-label">3.5" drive 2</strong>
+          <span class="disk-name">No disk</span>
+          <span class="disk-detail"></span>
+          <span class="disk-saved" hidden>has saved games</span>
+          <span class="drive-actions">
+            <select class="swap-disk" aria-label="Swap a disk of the set into 3.5&quot; drive 2" hidden></select>
+            <button type="button" data-action="choose">Insert disk...</button>
+            <button type="button" data-action="eject">Eject</button>
+            <button type="button" data-action="revert" hidden title="Forget what games saved to this disk">Revert</button>
+            <button type="button" data-action="download" title="The disk as it is now, saved games included">Download</button>
+          </span>
+        </div>
+        <div class="drive" data-drive="2" data-state="empty">
+          <span class="drive-led" title="In use"></span>
+          <strong class="drive-label">5.25" drive 1</strong>
+          <span class="disk-name">No disk</span>
+          <span class="disk-detail"></span>
+          <span class="disk-saved" hidden>has saved games</span>
+          <span class="drive-actions">
+            <select class="swap-disk" aria-label="Swap a disk of the set into 5.25&quot; drive 1" hidden></select>
+            <button type="button" data-action="choose">Insert disk...</button>
+            <button type="button" data-action="eject">Eject</button>
+            <button type="button" data-action="revert" hidden title="Forget what games saved to this disk">Revert</button>
+            <button type="button" data-action="download" title="The disk as it is now, saved games included">Download</button>
+          </span>
+        </div>
+        <div class="drive" data-drive="3" data-state="empty">
+          <span class="drive-led" title="In use"></span>
+          <strong class="drive-label">5.25" drive 2</strong>
+          <span class="disk-name">No disk</span>
+          <span class="disk-detail"></span>
+          <span class="disk-saved" hidden>has saved games</span>
+          <span class="drive-actions">
+            <select class="swap-disk" aria-label="Swap a disk of the set into 5.25&quot; drive 2" hidden></select>
+            <button type="button" data-action="choose">Insert disk...</button>
+            <button type="button" data-action="eject">Eject</button>
+            <button type="button" data-action="revert" hidden title="Forget what games saved to this disk">Revert</button>
+            <button type="button" data-action="download" title="The disk as it is now, saved games included">Download</button>
+          </span>
+        </div>
+        <p class="disk-hint">
+          Drop disk images anywhere on the page: 800K ones (.po, .2mg) go in a 3.5" drive, 5.25" ones (.dsk, .do, .po,
+          .nib, .woz) in a 5.25" drive, or drop onto a drive's row. Several at once, such as all the disks of a set, give
+          each drive a Swap menu for changing disks. The IIgs starts from the 5.25" drives before the 3.5" ones.
+        </p>
+        <div class="bundled-games" hidden>
+          <p class="bundled-games-row">
+            Free games:
+            <select name="bundled-game" aria-label="Free games"></select>
+            <button type="button" data-action="play-game" title="Puts the game in a drive and restarts the IIgs">Play</button>
+          </p>
+          <p class="game-info"></p>
+        </div>
+        <p class="save-disks">
+          <button type="button" data-action="new-save-disk" title="A blank disk, for games that save to a disk of their own">
+            New blank disk
+          </button>
+          <select name="save-disk-drive" aria-label="Drive for save disks">
+            <option value="1" selected>800K, in 3.5" drive 2</option>
+            <option value="0">800K, in 3.5" drive 1</option>
+            <option value="3">140K, in 5.25" drive 2</option>
+            <option value="2">140K, in 5.25" drive 1</option>
+          </select>
+          <span class="save-disk-list" hidden>
+            <select name="save-disk" aria-label="Save disks"></select>
+            <button type="button" data-action="insert-save-disk">Insert</button>
+            <button type="button" data-action="export-save-disk" title="Download the disk image">Export</button>
+            <button type="button" data-action="delete-save-disk">Delete</button>
+          </span>
+        </p>
+        <p class="disk-options">
+          <label title="Runs the IIgs as fast as it can go while a disk is being read or written">
+            <input type="checkbox" name="warp" checked /> Fast loading
+          </label>
+        </p>
+        <p class="disk-drop-hint">Release to insert</p>
+        <p class="disk-message" role="status"></p>
+        <input type="file" name="disk-file" accept=".po,.2mg,.dsk,.do,.nib,.woz,.zip,.gsstate" multiple hidden />
+      </section>
+
+      <section id="controls" class="controls" aria-label="Controllers">
+        <div class="controls-row joysticks">
+          <span class="joystick-port">
+            <strong>Joystick</strong>
+            <select name="joystick-keys" aria-label="Joystick keys">
+              <option value="off" selected>No keys</option>
+              <option value="numpad">Numpad 8 4 6 2, 0 and . fire</option>
+              <option value="arrows">Arrow keys, Space and / fire</option>
+              <option value="wasd">W A S D, F and G fire</option>
+            </select>
+            <select name="joystick-pad" aria-label="Joystick gamepad">
+              <option value="off">No gamepad</option>
+              <option value="0" selected>Gamepad 1</option>
+              <option value="1">Gamepad 2</option>
+            </select>
+          </span>
+          <label title="The IIgs keyboard's Caps Lock: letters type in capitals, as most Apple II software expects; the Caps Lock key switches it">
+            <input type="checkbox" name="caps-lock" checked /> Caps Lock
+          </label>
+        </div>
+        <div class="controls-row">
+          <label><input type="checkbox" name="sound" checked /> Sound</label>
+          <label>
+            Volume
+            <input type="range" name="volume" min="0" max="1" step="0.05" value="0.8" />
+          </label>
+          <span class="sound-hint" hidden>Click or press a key to start sound</span>
+          <span class="mouse-hint">Click the screen to use the mouse.</span>
+        </div>
+        <p class="gamepad-status" aria-live="polite"></p>
+        <p class="controls-hint">
+          Left Alt (Option on a Mac) is the Command (Apple) key and Right Alt is Option. Ctrl+F12 is Ctrl-Reset, and with
+          Command held it restarts; Ctrl+Left Alt+Esc opens the Control Panel. Click the screen for the mouse, and Esc to
+          let it go. To play a joystick game on the keyboard, choose keys for the joystick (keys it uses don't type, so
+          set it back to No keys for typing). Gamepads work without taking any keys. The speaker plays; the Ensoniq
+          sound chip doesn't yet.
+        </p>
+      </section>
+
+      <p id="status">Starting...</p>
+      <p class="rom-line" hidden>
+        <span class="rom-summary"></span>
+      </p>
+      <nav class="emulator-links" aria-label="Emulators">
+        Emulators:
+        <a href="https://mohrt.github.io/appleii/">Apple II</a>
+        <strong aria-current="page">Apple IIgs</strong>
+        <a href="https://mohrt.github.io/sz81/">Timex Sinclair 1000</a>
+        <a href="https://mohrt.github.io/c64/">Commodore 64</a>
+        <a href="https://mohrt.github.io/amiga500/">Amiga 500</a>
+        <a href="https://mohrt.github.io/ibmps2/">IBM PS/2</a>
+        <a href="https://mohrt.github.io/atari2600/">Atari 2600</a>
+        <a href="https://mohrt.github.io/intellivision/">Intellivision</a>
+        <a href="https://mohrt.github.io/colecovision/">ColecoVision</a>
+        <a href="https://mohrt.github.io/nes/">NES</a>
+        <a href="https://mohrt.github.io/mastersystem/">Sega Master System</a>
+        <a href="https://mohrt.github.io/genesis/">Sega Genesis</a>
+        <a href="https://mohrt.github.io/gameboy/">Game Boy</a>
+        <a href="https://mohrt.github.io/playstation/">PlayStation</a>
+      </nav>
+      <footer class="site-links">
+        <a href="https://mohrt.com/">mohrt.com</a>
+        <a href="https://github.com/mohrt/appleiigs" target="_blank" rel="noopener">Source on GitHub</a>
+        <a href="https://x.com/mohrt" target="_blank" rel="noopener">@mohrt on X</a>
+      </footer>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
