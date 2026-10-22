@@ -1,5 +1,6 @@
 import { Cpu65816, type Bus816 } from './cpu/cpu65816';
 import { Disk2 } from './disk/disk2';
+import type { Disk35 } from './disk/disk35';
 import type { FloppyDisk } from './disk/floppy';
 import { Adb, Modifier } from './io/adb';
 import { Clock } from './io/clock';
@@ -53,6 +54,8 @@ const VGC_SCANLINE = 0x20;
 const VGC_SECOND = 0x40;
 /** $C031: the IWM is talking to the 3.5" drives. */
 const DISKREG_35 = 0x40;
+/** $C031: the SEL line, which picks the 3.5" drive's upper head. */
+const DISKREG_HEAD = 0x80;
 
 export interface Roms {
   /** ROM 01's 128K (banks $FE-$FF) or ROM 3's 256K (banks $FC-$FF). */
@@ -105,7 +108,7 @@ function megaCycle(tick: number): number {
  * Mega II's 1 MHz. Any access to the Mega II's memory or I/O waits for its
  * clock. Around it are the VGC's video and interrupts, the ADB keyboard and
  * mouse, the clock and battery RAM, the sound GLU, the serial chip and the IWM
- * with the 5.25" drives in slot 6.
+ * with two 3.5" drives (slot 5) and two 5.25" drives (slot 6).
  */
 export class Iigs implements Bus816 {
   readonly ram: Uint8Array;
@@ -473,6 +476,7 @@ export class Iigs implements Bus816 {
     else if (reg >= 0x80 && reg < 0x90) this.languageCard(reg, value !== null);
     else if (reg >= 0x90 && (reg >> 4) - 8 === DISK_SLOT) {
       this.disk2.drive35 = (this.diskReg & DISKREG_35) !== 0;
+      this.disk2.headSelect = (this.diskReg & DISKREG_HEAD) !== 0;
       return this.disk2.access(reg & 0x0f, value, this.now);
     }
     return this.video.floatingBus(this.now);
@@ -679,5 +683,10 @@ export class Iigs implements Bus816 {
 
   insertDisk(drive: number, disk: FloppyDisk | null): void {
     this.disk2.drives[drive].disk = disk;
+  }
+
+  /** A 3.5" disk in drive 1 or 2 of the disk port (slot 5). */
+  insertDisk35(drive: number, disk: Disk35 | null): void {
+    this.disk2.drives35[drive].insert(disk);
   }
 }
