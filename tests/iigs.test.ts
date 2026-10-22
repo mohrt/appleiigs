@@ -85,6 +85,35 @@ describe('clock', () => {
   });
 });
 
+describe('sound', () => {
+  it('plays an Ensoniq oscillator set up through the sound GLU, and interrupts the CPU when it ends', () => {
+    const gs = testMachine();
+    gs.audio.setRates(CLOCK_HZ, 48_000);
+    const glu = (reg: number, value: number) => gs.write(0x00c000 | reg, value);
+    // A 256-byte square wave at $2000 in sound RAM, written with auto-increment.
+    glu(0x3c, 0x60 | 0x0f);
+    glu(0x3e, 0x00);
+    glu(0x3f, 0x20);
+    for (let i = 0; i < 256; i++) glu(0x3d, i < 128 ? 0x40 : 0xc0);
+    // Oscillator 0: that table, full volume, one-shot with its interrupt; one oscillator enabled.
+    glu(0x3c, 0x20 | 0x0f);
+    const doc = (register: number, value: number) => {
+      glu(0x3e, register);
+      glu(0x3d, value);
+    };
+    doc(0xe1, 0x00);
+    doc(0x80, 0x20);
+    doc(0xc0, 0x00);
+    doc(0x40, 0xff);
+    doc(0x20, 0x01);
+    doc(0xa0, 0x02 | 0x08);
+    gs.runCycles(CLOCK_HZ / 20);
+    const samples = gs.audio.takeSamples();
+    expect(Math.max(...samples.map(Math.abs))).toBeGreaterThan(0.1);
+    expect(gs.sound.doc.irq).toBe(true);
+  });
+});
+
 describe('800K disks', () => {
   it('turn blocks into GCR tracks and back', () => {
     const image = new Uint8Array(DISK35_BYTES);

@@ -1,8 +1,7 @@
+import { Doc5503 } from './doc5503';
+
 const CONTROL_RAM = 0x40;
 const CONTROL_AUTO_INCREMENT = 0x20;
-/** The DOC's oscillator interrupt register: bit 7 clear while an oscillator's interrupt is waiting. */
-const DOC_OIR = 0xe0;
-const OIR_NONE = 0x80;
 
 /**
  * The sound GLU, through which the CPU reaches the Ensoniq DOC's registers
@@ -12,17 +11,21 @@ const OIR_NONE = 0x80;
  */
 export class SoundGlu {
   readonly ram = new Uint8Array(0x10000);
-  readonly docRegisters = new Uint8Array(256);
+  readonly doc: Doc5503;
   control = 0;
   address = 0;
   private latch = 0;
+
+  constructor(megaHz: number) {
+    this.doc = new Doc5503(this.ram, megaHz);
+  }
 
   read(reg: number): number {
     switch (reg) {
       case 0x3c: return this.control & 0x7f;
       case 0x3d: {
         const value = this.latch;
-        this.latch = this.control & CONTROL_RAM ? this.ram[this.address] : this.readDoc(this.address & 0xff);
+        this.latch = this.control & CONTROL_RAM ? this.ram[this.address] : this.doc.read(this.address & 0xff);
         this.advance();
         return value;
       }
@@ -36,7 +39,7 @@ export class SoundGlu {
       case 0x3c: this.control = value; break;
       case 0x3d:
         if (this.control & CONTROL_RAM) this.ram[this.address] = value;
-        else this.docRegisters[this.address & 0xff] = value;
+        else this.doc.write(this.address & 0xff, value);
         this.advance();
         break;
       case 0x3e: this.address = (this.address & 0xff00) | value; break;
@@ -44,13 +47,9 @@ export class SoundGlu {
     }
   }
 
+  /** The master volume, 0-15. */
   get volume(): number {
     return this.control & 0x0f;
-  }
-
-  private readDoc(register: number): number {
-    if (register === DOC_OIR) return OIR_NONE;
-    return this.docRegisters[register];
   }
 
   private advance(): void {

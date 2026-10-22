@@ -32,6 +32,8 @@ const ROM_LAST_BANK = 0xff;
 /** Vertical blanks (60 a second) per quarter-second and one-second interrupt. */
 const VBLS_PER_QUARTER_SECOND = 15;
 const VBLS_PER_SECOND = 60;
+/** The Ensoniq is brought up to date at least this often, so its interrupts come on time. */
+const SOUND_UPDATE_CYCLES = 64;
 
 // $C035, SHADOW: what is not copied to the Mega II's memory in banks $E0-$E1.
 const SHADOW_NO_TEXT1 = 0x01;
@@ -126,7 +128,7 @@ export class Iigs implements Bus816 {
   readonly memory = new MemorySwitches();
   readonly adb: Adb;
   readonly clock = new Clock();
-  readonly sound = new SoundGlu();
+  readonly sound = new SoundGlu(CLOCK_HZ);
   readonly audio = new AudioMixer();
   readonly scc = new Scc();
   readonly disk2: Disk2;
@@ -162,6 +164,7 @@ export class Iigs implements Bus816 {
   /** CPU cycles already counted on the master clock in this instruction. */
   private cyclesSeen = 0;
   private nextVbl = CLASSIC_LINES * CYCLES_PER_LINE;
+  private nextSoundUpdate = 0;
   private romBanks = 4;
 
   /** For each 256-byte page of the 16 MB: the memory it reads and writes, where in it, and its shadow in banks $E0-$E1. */
@@ -189,6 +192,8 @@ export class Iigs implements Bus816 {
     };
     this.disk2 = new Disk2(new Uint8Array(0x100));
     this.disk2.iwm = true;
+    this.audio.source = (cycle) => this.sound.doc.run(cycle);
+    this.sound.doc.onOutput = (level, cycle) => this.audio.setDocLevel((level * this.sound.volume) / 15, cycle);
     this.setRoms(roms);
   }
 
@@ -229,6 +234,7 @@ export class Iigs implements Bus816 {
     this.adb.reset();
     this.clock.reset();
     this.scc.reset();
+    this.sound.doc.reset();
     this.disk2.reset();
     this.diskReg = 0;
     this.updatePages();
@@ -257,6 +263,10 @@ export class Iigs implements Bus816 {
       this.spendIdle(cpu.cycles - this.cyclesSeen);
       now = this.cycles;
       if (now >= this.nextVbl) this.verticalBlank();
+      if (now >= this.nextSoundUpdate) {
+        this.audio.run(now);
+        this.nextSoundUpdate = now + SOUND_UPDATE_CYCLES;
+      }
       this.video.catchUp(now);
     }
     this.audio.run(now);
@@ -281,7 +291,12 @@ export class Iigs implements Bus816 {
   }
 
   private get irqAsserted(): boolean {
-    return (this.intFlags & this.intEnable) !== 0 || (this.vgcInterrupts & (VGC_SCANLINE | VGC_SECOND)) !== 0 || this.adb.irq;
+    return (
+      (this.intFlags & this.intEnable) !== 0 ||
+      (this.vgcInterrupts & (VGC_SCANLINE | VGC_SECOND)) !== 0 ||
+      this.adb.irq ||
+      this.sound.doc.irq
+    );
   }
 
   /** The start of each vertical blank: the VBL, quarter-second and one-second interrupts. */
@@ -528,7 +543,9 @@ export class Iigs implements Bus816 {
       case 0x36: return this.speed;
       case 0x37: return this.dmaReg;
       case 0x38: case 0x39: case 0x3a: case 0x3b: return this.scc.read(reg);
-      case 0x3c: case 0x3d: case 0x3e: case 0x3f: return this.sound.read(reg);
+      case 0x3c: case 0x3d: case 0x3e: case 0x3f:
+        this.audio.run(this.now);
+        return this.sound.read(reg);
     }
     return 0;
   }
@@ -567,7 +584,10 @@ export class Iigs implements Bus816 {
       case 0x36: this.speed = value; break;
       case 0x37: this.dmaReg = value; break;
       case 0x38: case 0x39: case 0x3a: case 0x3b: this.scc.write(reg, value); break;
-      case 0x3c: case 0x3d: case 0x3e: case 0x3f: this.sound.write(reg, value); break;
+      case 0x3c: case 0x3d: case 0x3e: case 0x3f:
+        this.audio.run(this.now);
+        this.sound.write(reg, value);
+        break;
     }
   }
 
