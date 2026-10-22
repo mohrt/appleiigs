@@ -52,6 +52,8 @@ export class Cpu65816 {
   e = true;
 
   cycles = 0;
+  /** The bank vectors are fetched from (the IIgs always takes them from its ROM, in bank $FF). */
+  vectorBank = 0;
   /** Level-triggered IRQ input. */
   irqLine = false;
   /** WAI: waiting for an interrupt. */
@@ -76,7 +78,8 @@ export class Cpu65816 {
     this.s = 0x0100 | (this.s & 0xff);
     this.waiting = this.stopped = false;
     this.nmiPending = false;
-    this.pc = this.bus.read(VECTORS.emulation.reset) | (this.bus.read(VECTORS.emulation.reset + 1) << 8);
+    const vector = (this.vectorBank << 16) | VECTORS.emulation.reset;
+    this.pc = this.bus.read(vector) | (this.bus.read(vector + 1) << 8);
   }
 
   triggerNmi(): void {
@@ -495,7 +498,7 @@ export class Cpu65816 {
     this.flagI = true;
     this.flagD = false;
     this.pbr = 0;
-    const vector = this.e ? VECTORS.emulation[kind] : VECTORS.native[kind];
+    const vector = (this.vectorBank << 16) | (this.e ? VECTORS.emulation[kind] : VECTORS.native[kind]);
     this.pc = this.rd(vector) | (this.rd(vector + 1) << 8);
   }
 
