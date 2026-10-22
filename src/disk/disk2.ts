@@ -47,9 +47,10 @@ export class DiskDrive {
  * bit) or writes the latch's top bit out, so every disk is read bit by bit as
  * the real controller does.
  *
- * The IIgs's IWM chip does the same in its Disk II mode, and adds a mode
- * register (written with the motor off and Q6 and Q7 on), a status register
- * and a write handshake register, which the IIgs's firmware checks.
+ * The IWM chip of the IIc, IIc Plus and IIgs does the same in its Disk II
+ * mode, and adds a mode register (written with the motor off and Q6 and Q7
+ * on), a status register and a write handshake register, which their
+ * firmware checks.
  */
 export class Disk2 {
   readonly drives = [new DiskDrive(), new DiskDrive()];
@@ -68,10 +69,10 @@ export class Disk2 {
   lastAccess = -BUSY_WINDOW;
   /** When the CPU last gave the IWM a byte to write. */
   lastDataWrite = -UNDERRUN_CYCLES;
-  /** The IIc's IWM: its registers answer as well as the Disk II's. */
+  /** The IWM (the IIc's, IIc Plus's and IIgs's): its registers answer as well as the Disk II's. */
   iwm = false;
   /**
-   * The IWM is talking to the 3.5" drives (the IIgs's $C031 bit 6): the
+   * The IWM is talking to the 3.5" drives (the IIgs's $C031 bit 6, the IIc Plus's MIG): the
    * phases select their registers and strobe commands rather than step a
    * head, and bytes pass through a data register and a separate shift register.
    */
@@ -211,10 +212,14 @@ export class Disk2 {
     this.underrun = false;
   }
 
-  /** In asynchronous mode, reading a complete byte empties the data register. */
+  /**
+   * In asynchronous mode, reading a complete byte empties the data register;
+   * in synchronous mode it works as the Disk II's latch does.
+   */
   private readData35(): number {
+    if (!(this.mode & IWM_ASYNC)) return this.latch;
     const value = this.latch35;
-    if (value & 0x80 && this.mode & IWM_ASYNC) this.latch35 = 0;
+    if (value & 0x80) this.latch35 = 0;
     return value;
   }
 
@@ -254,6 +259,8 @@ export class Disk2 {
           this.writeBits--;
           disk.dirty = true;
         }
+      } else if (!(this.mode & IWM_ASYNC)) {
+        this.readBit(track[drive.bitPosition]);
       } else {
         const bit = track[drive.bitPosition];
         if (this.shifter35 !== 0 || bit) {
